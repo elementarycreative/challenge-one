@@ -30,6 +30,7 @@ function runSolutions(sourceCount) {
       syncLogSources.push(new LogSource());
     }
     try {
+      syncLogSources.sort((logA, logB) => logA.last.date.getTime() - logB.last.date.getTime())
       require("./solution/sync-sorted-merge")(syncLogSources, new Printer());
       resolve();
     } catch (e) {
@@ -54,9 +55,15 @@ function runSolutions(sourceCount) {
       for (let i = 0; i < sourceCount; i++) {
         asyncLogSources.push(new LogSource());
       }
-      require("./solution/async-sorted-merge")(asyncLogSources, new Printer())
-        .then(resolve)
-        .catch(reject);
+      Promise.all(asyncLogSources.map(log => log.popAsync())).then(
+        logResults => {
+          logResults.sort((logA, logB) => logA.date.getTime() - logB.date.getTime())
+
+          require("./solution/async-sorted-merge")(logResults, new Printer())
+            .then(resolve)
+            .catch(reject);
+        }
+      )
     });
   });
 }
